@@ -1,7 +1,7 @@
 
 node_modules
-dist
+##dist
 src
-##jwtRS256.key
-##jwtRS256.key.pub
-##.env
+jwtRS256.key
+jwtRS256.key.pub
+.env
