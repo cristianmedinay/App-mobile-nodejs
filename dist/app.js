@@ -24,17 +24,19 @@ require('dotenv').config({ path: `${__dirname}/../.env` });
 app.use(express_1.default.urlencoded({ extended: false }));
 app.use(express_1.default.json());
 const server = (0, http_1.createServer)(app);
-const io = new socket_io_1.Server(server, {
-    cors: {
-        origin: ['http://localhost:5173', "http://127.0.0.1:3000"]
+/* const io = new Server(server,{
+    cors:{
+        origin: ['http://localhost:5173',"http://127.0.0.1:3000",'https://apimobile.medinaydev.com']
     }
-});
+}); */
+const io = new socket_io_1.Server(server);
 exports.io = io;
 app.use((0, cookie_parser_1.default)());
-app.use((0, cors_1.default)({
-    origin: ['http://localhost:3000', 'http://192.168.1.37:3000', 'http://127.0.0.1:3000', 'http://localhost:3001', 'http://localhost:5173'],
+/* app.use(cors({
+    origin: ['http://localhost:3000','http://192.168.1.37:3000','http://127.0.0.1:3000','http://localhost:3001','http://localhost:5173','https://apimobile.medinaydev.com'],
     credentials: true
-}));
+})); */
+app.use((0, cors_1.default)());
 app.use((0, morgan_1.default)('dev'));
 console.log(process.env.KEYS);
 app.use(passport_1.default.initialize());
@@ -46,6 +48,7 @@ app.use(auth_routes_1.default);
 app.use(special_routes_1.default);
 let users = [{ 'name': 'this.nombreUsuario1696780753597' }, { 'name': 'this.nombreUsuario1696782325330' }];
 let datos = [];
+app.use(express_1.default.static('public'));
 io.on('connection', (socket) => {
     console.log('a user connected');
     socket.on('increment', (arg) => {

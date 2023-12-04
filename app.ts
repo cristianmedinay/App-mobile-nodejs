@@ -22,17 +22,18 @@ require('dotenv').config({ path: `${__dirname}/../.env` })
 app.use(express.urlencoded({extended:false}))
 app.use(express.json())
 const server = createServer(app);
-const io = new Server(server,{
+/* const io = new Server(server,{
     cors:{
-        origin: ['http://localhost:5173',"http://127.0.0.1:3000"]
+        origin: ['http://localhost:5173',"http://127.0.0.1:3000",'https://apimobile.medinaydev.com']
     }
-});
-
+}); */
+const io = new Server(server);
 app.use(cookies());
-app.use(cors({
-    origin: ['http://localhost:3000','http://192.168.1.37:3000','http://127.0.0.1:3000','http://localhost:3001','http://localhost:5173'],
+/* app.use(cors({
+    origin: ['http://localhost:3000','http://192.168.1.37:3000','http://127.0.0.1:3000','http://localhost:3001','http://localhost:5173','https://apimobile.medinaydev.com'],
     credentials: true
-}));
+})); */
+app.use(cors());
 app.use(morgan('dev'))
 
 console.log(process.env.KEYS)
@@ -51,6 +52,9 @@ app.use(authRoutes);
 app.use(specialRoutes);
 let users: User[] = [{'name':'this.nombreUsuario1696780753597' },{ 'name':'this.nombreUsuario1696782325330'}]
 let datos:any = [];
+
+app.use(express.static('public'));
+
 io.on('connection', (socket) => {
 
     console.log('a user connected');
