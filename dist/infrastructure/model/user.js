@@ -32,7 +32,7 @@ const userSchema = new mongoose_1.Schema({
     roles: {
         User: {
             type: Number,
-            default: 2001
+            default: 5
         },
         Editor: Number,
         Admin: Number
@@ -41,6 +41,21 @@ const userSchema = new mongoose_1.Schema({
         type: String,
         require: true
     },
+    url: {
+        type: String,
+        default: null
+    },
+    available: {
+        type: Boolean,
+        default: true
+    },
+    items: [
+        {
+            _id: { type: Number },
+            title: { type: String },
+            description: { type: String },
+        }
+    ],
     tokens: [{ type: Object }],
     refreshToken: [{ type: String }],
 }, {

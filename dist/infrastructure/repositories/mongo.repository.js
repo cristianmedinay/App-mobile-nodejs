@@ -18,9 +18,36 @@ const user_1 = __importDefault(require("../model/user"));
  * MongoDB
  */
 class MongoRepository {
+    /**TODO LIST**/
+    findListTodo(email, newItem) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const resultado = yield user_1.default.updateOne({ email: email }, // Filtro para identificar el usuario
+            { $push: { items: newItem } } // Operador $push para agregar el nuevo item
+            );
+            return resultado;
+        });
+    }
+    findDeleteTodo(email, id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const resultado = yield user_1.default.updateOne({ email: email }, // Filtro para identificar el usuario
+            { $pull: { items: { _id: id } } } // Operador $push para agregar el nuevo item
+            );
+            return resultado;
+        });
+    }
+    /**END TODO **/
+    updateListImagen(email, url) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const resultado = yield user_1.default.updateOne({ email: email }, // Filtro para identificar el usuario
+            { $set: { url: url } } // Operador $push para agregar el nuevo item
+            );
+            return resultado;
+        });
+    }
     findUserEmail(email) {
         return __awaiter(this, void 0, void 0, function* () {
             const user = yield user_1.default.findOne({ email: email });
+            console.log(user);
             return user;
         });
     }

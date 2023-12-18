@@ -24,7 +24,8 @@ const signOptions: SignOptions = {
 function createToken(user: any){ 
         const signedToken = jwt.sign({"UserInfo": {
           "email": user.email,
-          "roles": user.roles
+          "roles": user.roles,
+          "items":user.items
       }},privateKey,signOptions)
         /*  const obj:TokenData = { 
             expiresIn:"10m",
@@ -33,8 +34,9 @@ function createToken(user: any){
         return signedToken;
 }
 function refreshToken(user: IUser){ 
-        const refreshToken = jwt.sign({name:user.name, email: user.email},privateKey,{
-          expiresIn: "1d",
+        const refreshToken = jwt.sign({"UserInfo": {name:user.name, email: user.email}},privateKey,{
+          expiresIn: "10s",
+          //expiresIn: "1d",
           algorithm: "RS256" 
         })
        /*   const obj:TokenData = { 
@@ -56,12 +58,55 @@ export class UserController{
         if(!user){
             return res.status(400).json({msg:'el usuario no existe'})
         }
-        res.send({user})
+        res.send({id:user.id,name:user.name,email:user.email,picture:user.url,available:user.available})
+    }
+
+    public updatedUser = async (req:Request,res:Response)=>{       
+        const {email,url} = req.body;
+        console.log(req.body);
+        await this.userUseCase.updateList(`${email}`,url);
+        /* res.status(200).json({status:true}) */
+        
+        const user = await this.userUseCase.getDetaiEmail(`${email}`);
+        if(!user){
+          return res.status(400).json({msg:'el usuario no existe'})
+        }
+        res.send({id:user.id,name:user.name,email:user.email,picture:user.url,available:user.available});
+
+    }
+    
+    public getAllUsers  = async (req:Request,res:Response)=>{
+      
+        try {
+          // Obtener todos los usuarios
+          const users = await this.userUseCase.getAllUsers();
+  
+          // Verificar si hay usuarios
+          if (!users || users.length === 0) {
+              return res.status(404).json({ msg: 'No se encontraron usuarios' });
+          }
+  
+          // Mapear la información que deseas enviar en la respuesta
+          const mappedUsers = users.map(user => ({
+              id: user.uuid,
+              name: user.name,
+              email: user.email,
+              picture: user.url,
+              available: user.available
+          }));
+  
+          // Enviar la respuesta con la lista de usuarios
+          res.status(200).json(mappedUsers);
+          console.log(mappedUsers);
+      } catch (error) {
+          console.error(error);
+          res.status(500).json({ msg: 'Error al obtener usuarios' });
+      }
     }
 
     //registrarse
     public signUp = async (req:Request,res:Response)=>{
-        console.log(req.body)
+        /* console.log(req.body) */
         if(!req.body.email || !req.body.password){
             return res.status(400).json({msg:'Porfavor envia tu email y contraseña'})
         }
@@ -82,7 +127,7 @@ export class UserController{
     //login
     public signIn = async (req: Request,res: Response) => {
         const cookies = req.cookies;
-        /* console.log(`cookie available at login: ${JSON.stringify(cookies)}`); */
+        //console.log(`cookie available at login: ${JSON.stringify(cookies)}`);
         if(!req.body.email || !req.body.password){
             return res.status(400).json({msg:'Porfavor envia tu email y contraseña'})
         }
@@ -119,16 +164,16 @@ export class UserController{
 
               const refreshToken = cookies.jwt;
               const foundToken = await this.userUseCase.searchUser({ refreshToken:refreshToken});
-
+              /* console.log(foundToken); */
               if (!foundToken) {
-                  console.log('attempted refresh token reuse at login!')
-                  newRefreshTokenArray = [];
+/*                   console.log('attempted refresh token reuse at login!')
+ */                  newRefreshTokenArray = [];
               }
               user.refreshToken = user.refreshToken.filter((rt:any) => rt !== refreshToken);;
               await user.save();
               res.clearCookie('jwt', { httpOnly: true, sameSite: 'lax', secure: false });
         }
-        let oldTokens = user.tokens || [];
+        /* let oldTokens = user.tokens || [];
            if (oldTokens.length) {
              oldTokens = oldTokens.filter((tim: any) => {
                const timeDiff = (Date.now() - parseInt(tim.signedAt)) / 1000;
@@ -137,14 +182,15 @@ export class UserController{
                  return tim;
                }
              });
-           } 
+           }  */
        /*  await this.userUseCase.updateToken(true,user._id,oldTokens,tokenObject); */
         
         user.refreshToken = [...newRefreshTokenArray, newRefreshToken];
         const result = await user.save();
        /*  console.log(result); */
 
-        res.cookie('jwt', newRefreshToken, { httpOnly: true, sameSite: 'lax',secure: false, maxAge: 24 * 60 * 60 * 1000  })
+        //res.cookie('jwt', newRefreshToken, { httpOnly: true, sameSite: 'lax',secure: false, maxAge: 24 * 60 * 60 * 1000  })
+        res.cookie('jwt', newRefreshToken, { httpOnly: true, sameSite: 'lax',secure: false})
         res.status(200).json({token:tokenObject,status:true,user:newUser,roles})
     } 
 
@@ -152,6 +198,31 @@ export class UserController{
       const cookies = req.cookies;
       console.log(cookies)
 
+      res.status(200).json({status:true})
+    }
+    public storeTodo = async (req:Request, res:Response) => {
+      
+      const {email,items} = req.body;
+      const user = await this.userUseCase.updateTodoList(`${email}`,items);
+      res.status(200).json({status:true,users:user})
+
+    }
+    
+    public getUserTodoList = async (req:Request, res:Response) => {
+      const {email} = req.body;
+      const user = await this.userUseCase.getDetaiEmail(`${email}`);
+      if(!user){
+          return res.status(400).json({msg:'el usuario no existe'})
+      }      
+      res.status(200).json({status:true,items:user.items})
+    }
+   
+
+    public deleteTodo = async (req:Request, res:Response) => {
+      
+      const {email,id} = req.body;
+      console.log(email)
+      const user = await this.userUseCase.deleteTodoList(`${email}`,id);
       res.status(200).json({status:true})
     }
 
@@ -218,7 +289,8 @@ export class UserController{
               const newRefreshToken = jwt.sign(
                   { "name":foundUser.name,"email": foundUser.email },
                   privateKey,
-                  { expiresIn: '1d', algorithm: "RS256" }
+                  { expiresIn: '1s', algorithm: "RS256" }
+                  //{ expiresIn: '1d', algorithm: "RS256" }
               );
               foundUser.refreshToken = [...newRefreshTokenArray, newRefreshToken];
               const result = await foundUser.save();

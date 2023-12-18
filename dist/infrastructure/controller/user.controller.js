@@ -24,7 +24,8 @@ const signOptions = {
 function createToken(user) {
     const signedToken = jsonwebtoken_1.default.sign({ "UserInfo": {
             "email": user.email,
-            "roles": user.roles
+            "roles": user.roles,
+            "items": user.items
         } }, privateKey, signOptions);
     /*  const obj:TokenData = {
         expiresIn:"10m",
@@ -33,8 +34,9 @@ function createToken(user) {
     return signedToken;
 }
 function refreshToken(user) {
-    const refreshToken = jsonwebtoken_1.default.sign({ name: user.name, email: user.email }, privateKey, {
-        expiresIn: "1d",
+    const refreshToken = jsonwebtoken_1.default.sign({ "UserInfo": { name: user.name, email: user.email } }, privateKey, {
+        expiresIn: "10s",
+        //expiresIn: "1d",
         algorithm: "RS256"
     });
     /*   const obj:TokenData = {
@@ -53,11 +55,47 @@ class UserController {
             if (!user) {
                 return res.status(400).json({ msg: 'el usuario no existe' });
             }
-            res.send({ user });
+            res.send({ id: user.id, name: user.name, email: user.email, picture: user.url, available: user.available });
+        });
+        this.updatedUser = (req, res) => __awaiter(this, void 0, void 0, function* () {
+            const { email, url } = req.body;
+            console.log(req.body);
+            yield this.userUseCase.updateList(`${email}`, url);
+            /* res.status(200).json({status:true}) */
+            const user = yield this.userUseCase.getDetaiEmail(`${email}`);
+            if (!user) {
+                return res.status(400).json({ msg: 'el usuario no existe' });
+            }
+            res.send({ id: user.id, name: user.name, email: user.email, picture: user.url, available: user.available });
+        });
+        this.getAllUsers = (req, res) => __awaiter(this, void 0, void 0, function* () {
+            try {
+                // Obtener todos los usuarios
+                const users = yield this.userUseCase.getAllUsers();
+                // Verificar si hay usuarios
+                if (!users || users.length === 0) {
+                    return res.status(404).json({ msg: 'No se encontraron usuarios' });
+                }
+                // Mapear la información que deseas enviar en la respuesta
+                const mappedUsers = users.map(user => ({
+                    id: user.uuid,
+                    name: user.name,
+                    email: user.email,
+                    picture: user.url,
+                    available: user.available
+                }));
+                // Enviar la respuesta con la lista de usuarios
+                res.status(200).json(mappedUsers);
+                console.log(mappedUsers);
+            }
+            catch (error) {
+                console.error(error);
+                res.status(500).json({ msg: 'Error al obtener usuarios' });
+            }
         });
         //registrarse
         this.signUp = (req, res) => __awaiter(this, void 0, void 0, function* () {
-            console.log(req.body);
+            /* console.log(req.body) */
             if (!req.body.email || !req.body.password) {
                 return res.status(400).json({ msg: 'Porfavor envia tu email y contraseña' });
             }
@@ -76,7 +114,7 @@ class UserController {
         //login
         this.signIn = (req, res) => __awaiter(this, void 0, void 0, function* () {
             const cookies = req.cookies;
-            /* console.log(`cookie available at login: ${JSON.stringify(cookies)}`); */
+            //console.log(`cookie available at login: ${JSON.stringify(cookies)}`);
             if (!req.body.email || !req.body.password) {
                 return res.status(400).json({ msg: 'Porfavor envia tu email y contraseña' });
             }
@@ -106,34 +144,56 @@ class UserController {
             if (cookies === null || cookies === void 0 ? void 0 : cookies.jwt) {
                 const refreshToken = cookies.jwt;
                 const foundToken = yield this.userUseCase.searchUser({ refreshToken: refreshToken });
+                /* console.log(foundToken); */
                 if (!foundToken) {
-                    console.log('attempted refresh token reuse at login!');
-                    newRefreshTokenArray = [];
+                    /*                   console.log('attempted refresh token reuse at login!')
+                     */ newRefreshTokenArray = [];
                 }
                 user.refreshToken = user.refreshToken.filter((rt) => rt !== refreshToken);
                 ;
                 yield user.save();
                 res.clearCookie('jwt', { httpOnly: true, sameSite: 'lax', secure: false });
             }
-            let oldTokens = user.tokens || [];
-            if (oldTokens.length) {
-                oldTokens = oldTokens.filter((tim) => {
-                    const timeDiff = (Date.now() - parseInt(tim.signedAt)) / 1000;
-                    if (timeDiff < 85300) {
-                        return tim;
-                    }
-                });
-            }
+            /* let oldTokens = user.tokens || [];
+               if (oldTokens.length) {
+                 oldTokens = oldTokens.filter((tim: any) => {
+                   const timeDiff = (Date.now() - parseInt(tim.signedAt)) / 1000;
+    
+                   if (timeDiff < 85300) {
+                     return tim;
+                   }
+                 });
+               }  */
             /*  await this.userUseCase.updateToken(true,user._id,oldTokens,tokenObject); */
             user.refreshToken = [...newRefreshTokenArray, newRefreshToken];
             const result = yield user.save();
             /*  console.log(result); */
-            res.cookie('jwt', newRefreshToken, { httpOnly: true, sameSite: 'lax', secure: false, maxAge: 24 * 60 * 60 * 1000 });
+            //res.cookie('jwt', newRefreshToken, { httpOnly: true, sameSite: 'lax',secure: false, maxAge: 24 * 60 * 60 * 1000  })
+            res.cookie('jwt', newRefreshToken, { httpOnly: true, sameSite: 'lax', secure: false });
             res.status(200).json({ token: tokenObject, status: true, user: newUser, roles });
         });
         this.prueba = (req, res) => __awaiter(this, void 0, void 0, function* () {
             const cookies = req.cookies;
             console.log(cookies);
+            res.status(200).json({ status: true });
+        });
+        this.storeTodo = (req, res) => __awaiter(this, void 0, void 0, function* () {
+            const { email, items } = req.body;
+            const user = yield this.userUseCase.updateTodoList(`${email}`, items);
+            res.status(200).json({ status: true, users: user });
+        });
+        this.getUserTodoList = (req, res) => __awaiter(this, void 0, void 0, function* () {
+            const { email } = req.body;
+            const user = yield this.userUseCase.getDetaiEmail(`${email}`);
+            if (!user) {
+                return res.status(400).json({ msg: 'el usuario no existe' });
+            }
+            res.status(200).json({ status: true, items: user.items });
+        });
+        this.deleteTodo = (req, res) => __awaiter(this, void 0, void 0, function* () {
+            const { email, id } = req.body;
+            console.log(email);
+            const user = yield this.userUseCase.deleteTodoList(`${email}`, id);
             res.status(200).json({ status: true });
         });
         this.handleRefreshToken = (req, res) => __awaiter(this, void 0, void 0, function* () {
@@ -180,7 +240,9 @@ class UserController {
                     }
                 }, privateKey, { expiresIn: '10s', algorithm: "RS256" });
                 //CREAMOS EL REFRESH
-                const newRefreshToken = jsonwebtoken_1.default.sign({ "name": foundUser.name, "email": foundUser.email }, privateKey, { expiresIn: '1d', algorithm: "RS256" });
+                const newRefreshToken = jsonwebtoken_1.default.sign({ "name": foundUser.name, "email": foundUser.email }, privateKey, { expiresIn: '1s', algorithm: "RS256" }
+                //{ expiresIn: '1d', algorithm: "RS256" }
+                );
                 foundUser.refreshToken = [...newRefreshTokenArray, newRefreshToken];
                 const result = yield foundUser.save();
                 //GUARDAMOS EN LAS COOKIES EL REFRESH Y EN LA BBDD

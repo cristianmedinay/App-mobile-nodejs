@@ -8,8 +8,40 @@ import User from '../model/user'
  */
 
 export class MongoRepository implements UserRepository{
+
+    /**TODO LIST**/
+    async findListTodo(email: string,newItem: Object): Promise<any> {
+      const resultado = await User.updateOne(
+        { email: email }, // Filtro para identificar el usuario
+        { $push: { items: newItem } } // Operador $push para agregar el nuevo item
+      );
+
+      return resultado;
+    }
+    async findDeleteTodo(email: string,id:number): Promise<any> {
+      const resultado = await User.updateOne(
+        { email: email }, // Filtro para identificar el usuario
+        { $pull: { items: {_id:id} } } // Operador $push para agregar el nuevo item
+      );
+
+      return resultado;
+    }
+
+    /**END TODO **/
+
+    async updateListImagen(email: string,url: string): Promise<any> {
+      const resultado = await User.updateOne(
+        { email: email }, // Filtro para identificar el usuario
+        { $set: { url: url } } // Operador $push para agregar el nuevo item
+      );
+
+      return resultado;
+    }
+
+
     async findUserEmail(email: string): Promise<any> {
         const user = await User.findOne({email:email})
+        console.log(user);
         return user
     }
     async findUserById(uuid: string): Promise<any> {

@@ -7,6 +7,15 @@ import { UserRepository } from "../../domain/user.repository";
  */
 const MOCK_USER={name:'cristian',email:'cristian@gmail.com',uuid:'000-000'}
 export class MockRepository implements UserRepository{
+    findListTodo(email: string, newItem: Object): Promise<any> {
+        throw new Error("Method not implemented.");
+    }
+    findDeleteTodo(email: string, id: number): Promise<any> {
+        throw new Error("Method not implemented.");
+    }
+    updateListImagen(email: string, url: string): Promise<UserEntity[] | null> {
+        throw new Error("Method not implemented.");
+    }
     findUser(user: any): Promise<any> {
         throw new Error("Method not implemented.");
     }

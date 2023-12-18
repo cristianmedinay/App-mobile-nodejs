@@ -15,6 +15,15 @@ exports.MockRepository = void 0;
  */
 const MOCK_USER = { name: 'cristian', email: 'cristian@gmail.com', uuid: '000-000' };
 class MockRepository {
+    findListTodo(email, newItem) {
+        throw new Error("Method not implemented.");
+    }
+    findDeleteTodo(email, id) {
+        throw new Error("Method not implemented.");
+    }
+    updateListImagen(email, url) {
+        throw new Error("Method not implemented.");
+    }
     findUser(user) {
         throw new Error("Method not implemented.");
     }
